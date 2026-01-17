@@ -32,30 +32,37 @@ jobs:
           POSTGRES_USER=${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+          TRAEFIK_DASHBOARD_AUTH=${{ secrets.TRAEFIK_DASHBOARD_AUTH }}
           EOF
           # Remove leading whitespace from heredoc
           sed -i 's/^[[:space:]]*//' /opt/infrastructure/.env
 
+      - name: Create acme.json for Let's Encrypt
+        run: |
+          ACME_FILE="/opt/infrastructure/traefik_certs/acme.json"
+          if [ ! -f "$ACME_FILE" ]; then
+            sudo mkdir -p /opt/infrastructure/traefik_certs
+            sudo touch "$ACME_FILE"
+            sudo chmod 600 "$ACME_FILE"
+            sudo chown $USER:$USER "$ACME_FILE"
+          fi
+
       - name: Start containers
         run: |
           cd /opt/infrastructure
-          docker-compose up -d --remove-orphans
+          docker compose up -d --remove-orphans
 
-      - name: Deploy Nginx configs
+      - name: Wait for Traefik to be ready
         run: |
-          sudo mkdir -p /var/www/devman.me
-          sudo cp /opt/infrastructure/nginx/*.conf /etc/nginx/sites-available/
-          for conf in /opt/infrastructure/nginx/*.conf; do
-            name=$(basename "$conf")
-            sudo ln -sf /etc/nginx/sites-available/$name /etc/nginx/sites-enabled/
-          done
-          sudo rm -f /etc/nginx/sites-enabled/default
-          sudo nginx -t && sudo systemctl reload nginx
+          echo "Waiting for Traefik to start..."
+          sleep 10
+          docker logs traefik 2>&1 | tail -20 || true
 
       - name: Show status
         run: |
           cd /opt/infrastructure
-          docker-compose ps
+          docker compose ps
           echo ""
-          echo "✅ Infrastructure deployed!"
-          echo "📅 Deployed at: $(date)"
+          echo "Infrastructure deployed!"
+          echo "Traefik is ready to route traffic"
+          echo "Deployed at: $(date)"

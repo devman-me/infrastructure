@@ -1,6 +1,35 @@
 version: "3.8"
 
 services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik:/etc/traefik:ro
+      - traefik_certs:/letsencrypt
+    networks:
+      - infra_network
+    labels:
+      - "traefik.enable=true"
+      # Dashboard (optional, access via traefik.devman.me)
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.devman.me`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth"
+      # Basic auth for dashboard (generate with: htpasswd -nb admin password)
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH:-admin:$$apr1$$placeholder}"
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   mysql:
     image: mysql:8.0
     container_name: infra_mysql
@@ -61,6 +90,7 @@ volumes:
   mysql_data:
   postgres_data:
   redis_data:
+  traefik_certs:
 
 networks:
   infra_network:

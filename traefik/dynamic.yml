@@ -1,0 +1,59 @@
+# Traefik Dynamic Configuration
+# Middlewares and other dynamic configurations
+
+http:
+  middlewares:
+    # Redirect www to non-www
+    www-redirect:
+      redirectRegex:
+        regex: "^https?://www\\.(.+)"
+        replacement: "https://${1}"
+        permanent: true
+
+    # Security headers
+    security-headers:
+      headers:
+        frameDeny: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        customResponseHeaders:
+          X-Robots-Tag: "noindex, nofollow, nosnippet, noarchive"
+
+    # Rate limiting
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: 1s
+
+    # Large body size for file uploads (Mautic)
+    large-body:
+      buffering:
+        maxRequestBodyBytes: 67108864  # 64MB
+
+    # Compress responses
+    compress:
+      compress: {}
+
+    # Retry on failure
+    retry:
+      retry:
+        attempts: 3
+        initialInterval: 100ms
+
+  # Middleware chains
+  middlewares:
+    default-chain:
+      chain:
+        middlewares:
+          - security-headers
+          - compress
+          - rate-limit
+
+    mautic-chain:
+      chain:
+        middlewares:
+          - security-headers
+          - compress
+          - large-body
