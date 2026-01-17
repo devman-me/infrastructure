@@ -7,28 +7,41 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+
     steps:
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            cd /opt/infrastructure
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            # Pull latest changes
-            git pull origin main
+      - name: Create directory if not exists
+        run: |
+          sudo mkdir -p /opt/infrastructure
+          sudo chown -R $USER:$USER /opt/infrastructure
 
-            # Ensure .env exists
-            if [ ! -f .env ]; then
-              echo "ERROR: .env file not found. Please create it first."
-              exit 1
-            fi
+      - name: Sync files to /opt/infrastructure
+        run: |
+          rsync -av --delete \
+            --exclude '.git' \
+            --exclude '.env' \
+            ./ /opt/infrastructure/
 
-            # Recreate containers if compose changed
-            docker-compose up -d --remove-orphans
+      - name: Ensure .env exists
+        run: |
+          if [ ! -f /opt/infrastructure/.env ]; then
+            echo "⚠️  WARNING: /opt/infrastructure/.env not found!"
+            echo "Please create it manually with: cp .env.example .env && nano .env"
+            exit 1
+          fi
 
-            # Show status
-            docker-compose ps
+      - name: Start containers
+        run: |
+          cd /opt/infrastructure
+          docker-compose up -d --remove-orphans
+
+      - name: Show status
+        run: |
+          cd /opt/infrastructure
+          docker-compose ps
+          echo ""
+          echo "✅ Infrastructure deployed!"
+          echo "📅 Deployed at: $(date)"
