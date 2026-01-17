@@ -41,6 +41,17 @@ jobs:
           cd /opt/infrastructure
           docker-compose up -d --remove-orphans
 
+      - name: Deploy Nginx configs
+        run: |
+          sudo mkdir -p /var/www/devman.me
+          sudo cp /opt/infrastructure/nginx/*.conf /etc/nginx/sites-available/
+          for conf in /opt/infrastructure/nginx/*.conf; do
+            name=$(basename "$conf")
+            sudo ln -sf /etc/nginx/sites-available/$name /etc/nginx/sites-enabled/
+          done
+          sudo rm -f /etc/nginx/sites-enabled/default
+          sudo nginx -t && sudo systemctl reload nginx
+
       - name: Show status
         run: |
           cd /opt/infrastructure
