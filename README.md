@@ -10,46 +10,89 @@ Serviços compartilhados para todas as aplicações.
 | PostgreSQL 16 | 5432 | infra_postgres |
 | Redis 7 | 6379 | infra_redis |
 
-## Setup na VPS
+## Deploy Automático (CI/CD)
 
-### 1. Clone o repositório
+O deploy é feito automaticamente via GitHub Actions quando há push na branch `main`.
 
+### Pré-requisitos na VPS
+
+1. **Docker e Docker Compose instalados**
+2. **GitHub Actions Runner configurado**
+
+### GitHub Secrets
+
+Os segredos são gerenciados via GitHub Secrets (Settings → Secrets and variables → Actions):
+
+| Secret | Descrição |
+|--------|-----------|
+| `MYSQL_ROOT_PASSWORD` | Senha root do MySQL |
+| `POSTGRES_USER` | Usuário do PostgreSQL |
+| `POSTGRES_PASSWORD` | Senha do PostgreSQL |
+| `REDIS_PASSWORD` | Senha do Redis |
+
+### Self-Hosted Runner
+
+O runner está instalado em `/home/deploy/actions-runner`.
+
+**Verificar status:**
 ```bash
-cd /opt
-git clone git@github.com:SEU_USER/infrastructure.git
-cd infrastructure
+cd /home/deploy/actions-runner
+./svc.sh status
 ```
 
-### 2. Configure as variáveis de ambiente
-
+**Iniciar o runner:**
 ```bash
-cp .env.example .env
-nano .env
+# Como serviço (recomendado)
+sudo ./svc.sh start
+
+# Ou manualmente (para debug)
+./run.sh
 ```
 
-Gere senhas seguras:
+**Parar o runner:**
 ```bash
-openssl rand -base64 32  # Para cada senha
+sudo ./svc.sh stop
 ```
 
-### 3. (Opcional) Ajuste os scripts de init
+**Ver logs do runner:**
+```bash
+journalctl -u actions.runner.pedro9bee-infrastructure.$(hostname) -f
+```
 
-Edite `init/mysql/01-mautic.sql` para definir a senha do usuário mautic:
+### Fluxo de Deploy
+
+1. Push para `main` dispara o workflow
+2. Runner na VPS pega o job
+3. Código é sincronizado para `/opt/infrastructure`
+4. `.env` é gerado a partir dos GitHub Secrets
+5. `docker-compose up -d` sobe os containers
+
+## Setup Manual (primeira vez)
+
+### 1. Instalar Docker
+
+```bash
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER
+```
+
+### 2. Instalar GitHub Actions Runner
+
+Siga as instruções em: Settings → Actions → Runners → New self-hosted runner
+
+```bash
+mkdir -p /home/deploy/actions-runner && cd /home/deploy/actions-runner
+# Baixe e configure seguindo as instruções do GitHub
+./config.sh --url https://github.com/pedro9bee/infrastructure --token YOUR_TOKEN
+sudo ./svc.sh install
+sudo ./svc.sh start
+```
+
+### 3. (Opcional) Scripts de init para bancos
+
+Edite `init/mysql/01-mautic.sql` para criar usuários adicionais:
 ```sql
 CREATE USER IF NOT EXISTS 'mautic'@'%' IDENTIFIED BY 'SUA_SENHA_AQUI';
-```
-
-### 4. Suba os serviços
-
-```bash
-docker-compose up -d
-```
-
-### 5. Verifique se estão rodando
-
-```bash
-docker-compose ps
-docker-compose logs -f
 ```
 
 ## Conectando outras aplicações
