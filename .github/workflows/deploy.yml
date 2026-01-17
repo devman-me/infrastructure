@@ -25,13 +25,16 @@ jobs:
             --exclude '.env' \
             ./ /opt/infrastructure/
 
-      - name: Ensure .env exists
+      - name: Generate .env from secrets
         run: |
-          if [ ! -f /opt/infrastructure/.env ]; then
-            echo "⚠️  WARNING: /opt/infrastructure/.env not found!"
-            echo "Please create it manually with: cp .env.example .env && nano .env"
-            exit 1
-          fi
+          cat > /opt/infrastructure/.env << 'EOF'
+          MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+          EOF
+          # Remove leading whitespace from heredoc
+          sed -i 's/^[[:space:]]*//' /opt/infrastructure/.env
 
       - name: Start containers
         run: |
