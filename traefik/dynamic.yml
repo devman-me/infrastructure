@@ -42,6 +42,13 @@ http:
         attempts: 3
         initialInterval: 100ms
 
+    # Redirect to boutique
+    redirect-boutique:
+      redirectRegex:
+        regex: ".*"
+        replacement: "https://devman.me/boutique"
+        permanent: false
+
   # Middleware chains
   middlewares:
     default-chain:
