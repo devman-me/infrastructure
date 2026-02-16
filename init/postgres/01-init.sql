@@ -1,6 +1,3 @@
--- Create databases for future apps
--- Uncomment and modify as needed
-
--- CREATE DATABASE myapp;
--- CREATE USER myapp_user WITH ENCRYPTED PASSWORD 'change_me';
--- GRANT ALL PRIVILEGES ON DATABASE myapp TO myapp_user;
+-- RAG-as-a-Service database
+SELECT 'CREATE DATABASE ragaas'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'ragaas')\gexec
