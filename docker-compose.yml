@@ -2,11 +2,11 @@ version: "3.8"
 
 services:
   traefik:
-    image: traefik:v3.0
+    image: traefik:v3.6
     container_name: traefik
     restart: unless-stopped
     environment:
-      - TRAEFIK_CONFIG_VERSION=2
+      - TRAEFIK_CONFIG_VERSION=3
     ports:
       - "80:80"
       - "443:443"
