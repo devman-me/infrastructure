@@ -52,18 +52,25 @@ jobs:
           cd /opt/infrastructure
           docker compose up -d --remove-orphans
 
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to start..."
+          for i in {1..15}; do
+            if docker exec infra_postgres pg_isready -U ${POSTGRES_USER:-postgres} 2>/dev/null; then
+              echo "Postgres is ready."
+              break
+            fi
+            echo "Waiting for Postgres... attempt $i"
+            sleep 2
+          done
+          sleep 5
+          docker logs traefik 2>&1 | tail -20 || true
+
       - name: Sync Postgres password
         run: |
-          echo "Syncing Postgres password to match env..."
           docker exec infra_postgres psql -U ${POSTGRES_USER:-postgres} -c \
             "ALTER USER ${POSTGRES_USER:-postgres} WITH PASSWORD '${{ secrets.POSTGRES_PASSWORD }}';"
           echo "Postgres password synced."
-
-      - name: Wait for Traefik to be ready
-        run: |
-          echo "Waiting for Traefik to start..."
-          sleep 10
-          docker logs traefik 2>&1 | tail -20 || true
 
       - name: Show status
         run: |
