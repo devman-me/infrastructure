@@ -1,16 +1,13 @@
-version: "3.8"
-
 services:
   traefik:
     image: traefik:v3.6
     container_name: traefik
     restart: unless-stopped
     environment:
-      - TRAEFIK_CONFIG_VERSION=3
+      - TRAEFIK_CONFIG_VERSION=4
     ports:
       - "80:80"
       - "443:443"
-      - "100.103.254.26:8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik:/etc/traefik:ro
