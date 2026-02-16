@@ -49,8 +49,7 @@ http:
         replacement: "https://devman.me/boutique"
         permanent: false
 
-  # Middleware chains
-  middlewares:
+    # Middleware chains
     default-chain:
       chain:
         middlewares:
