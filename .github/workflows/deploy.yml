@@ -52,6 +52,13 @@ jobs:
           cd /opt/infrastructure
           docker compose up -d --remove-orphans
 
+      - name: Sync Postgres password
+        run: |
+          echo "Syncing Postgres password to match env..."
+          docker exec infra_postgres psql -U ${POSTGRES_USER:-postgres} -c \
+            "ALTER USER ${POSTGRES_USER:-postgres} WITH PASSWORD '${{ secrets.POSTGRES_PASSWORD }}';"
+          echo "Postgres password synced."
+
       - name: Wait for Traefik to be ready
         run: |
           echo "Waiting for Traefik to start..."
